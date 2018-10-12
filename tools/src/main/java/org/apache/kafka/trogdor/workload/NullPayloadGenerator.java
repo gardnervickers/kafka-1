@@ -14,28 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.kafka.trogdor.rest;
+package org.apache.kafka.trogdor.workload;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.TextNode;
-import org.apache.kafka.trogdor.task.TaskSpec;
 
 /**
- * When we're in the process of sending a TaskSpec to the Agent, the Worker is regarded
- * as being in WorkerReceiving state.
+ * A PayloadGenerator which always generates a null payload.
  */
-public final class WorkerReceiving extends WorkerState {
+public class NullPayloadGenerator implements PayloadGenerator {
     @JsonCreator
-    public WorkerReceiving(@JsonProperty("taskId") String taskId,
-            @JsonProperty("spec") TaskSpec spec) {
-        super(taskId, spec);
+    public NullPayloadGenerator() {
     }
 
     @Override
-    public JsonNode status() {
-        return new TextNode("receiving");
+    public byte[] generate(long position) {
+        return null;
     }
 }

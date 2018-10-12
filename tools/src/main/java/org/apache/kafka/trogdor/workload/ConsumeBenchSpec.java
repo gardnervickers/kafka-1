@@ -19,6 +19,7 @@ package org.apache.kafka.trogdor.workload;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.apache.kafka.trogdor.common.Topology;
 import org.apache.kafka.trogdor.task.TaskController;
 import org.apache.kafka.trogdor.task.TaskSpec;
@@ -31,54 +32,42 @@ import java.util.Set;
 /**
  * The specification for a benchmark that produces messages to a set of topics.
  */
-public class ProduceBenchSpec extends TaskSpec {
-    private final String producerNode;
+public class ConsumeBenchSpec extends TaskSpec {
+
+    private final String consumerNode;
     private final String bootstrapServers;
     private final int targetMessagesPerSec;
     private final int maxMessages;
-    private final PayloadGenerator keyGenerator;
-    private final PayloadGenerator valueGenerator;
-    private final Map<String, String> producerConf;
+    private final Map<String, String> consumerConf;
     private final Map<String, String> adminClientConf;
     private final Map<String, String> commonClientConf;
     private final TopicsSpec activeTopics;
-    private final TopicsSpec inactiveTopics;
 
     @JsonCreator
-    public ProduceBenchSpec(@JsonProperty("startMs") long startMs,
-                         @JsonProperty("durationMs") long durationMs,
-                         @JsonProperty("producerNode") String producerNode,
-                         @JsonProperty("bootstrapServers") String bootstrapServers,
-                         @JsonProperty("targetMessagesPerSec") int targetMessagesPerSec,
-                         @JsonProperty("maxMessages") int maxMessages,
-                         @JsonProperty("keyGenerator") PayloadGenerator keyGenerator,
-                         @JsonProperty("valueGenerator") PayloadGenerator valueGenerator,
-                         @JsonProperty("producerConf") Map<String, String> producerConf,
-                         @JsonProperty("commonClientConf") Map<String, String> commonClientConf,
-                         @JsonProperty("adminClientConf") Map<String, String> adminClientConf,
-                         @JsonProperty("activeTopics") TopicsSpec activeTopics,
-                         @JsonProperty("inactiveTopics") TopicsSpec inactiveTopics) {
+    public ConsumeBenchSpec(@JsonProperty("startMs") long startMs,
+                            @JsonProperty("durationMs") long durationMs,
+                            @JsonProperty("consumerNode") String consumerNode,
+                            @JsonProperty("bootstrapServers") String bootstrapServers,
+                            @JsonProperty("targetMessagesPerSec") int targetMessagesPerSec,
+                            @JsonProperty("maxMessages") int maxMessages,
+                            @JsonProperty("consumerConf") Map<String, String> consumerConf,
+                            @JsonProperty("commonClientConf") Map<String, String> commonClientConf,
+                            @JsonProperty("adminClientConf") Map<String, String> adminClientConf,
+                            @JsonProperty("activeTopics") TopicsSpec activeTopics) {
         super(startMs, durationMs);
-        this.producerNode = (producerNode == null) ? "" : producerNode;
+        this.consumerNode = (consumerNode == null) ? "" : consumerNode;
         this.bootstrapServers = (bootstrapServers == null) ? "" : bootstrapServers;
         this.targetMessagesPerSec = targetMessagesPerSec;
         this.maxMessages = maxMessages;
-        this.keyGenerator = keyGenerator == null ?
-            new SequentialPayloadGenerator(4, 0) : keyGenerator;
-        this.valueGenerator = valueGenerator == null ?
-            new ConstantPayloadGenerator(512, new byte[0]) : valueGenerator;
-        this.producerConf = configOrEmptyMap(producerConf);
+        this.consumerConf = configOrEmptyMap(consumerConf);
         this.commonClientConf = configOrEmptyMap(commonClientConf);
         this.adminClientConf = configOrEmptyMap(adminClientConf);
-        this.activeTopics = (activeTopics == null) ?
-            TopicsSpec.EMPTY : activeTopics.immutableCopy();
-        this.inactiveTopics = (inactiveTopics == null) ?
-            TopicsSpec.EMPTY : inactiveTopics.immutableCopy();
+        this.activeTopics = activeTopics == null ? TopicsSpec.EMPTY : activeTopics.immutableCopy();
     }
 
     @JsonProperty
-    public String producerNode() {
-        return producerNode;
+    public String consumerNode() {
+        return consumerNode;
     }
 
     @JsonProperty
@@ -97,18 +86,8 @@ public class ProduceBenchSpec extends TaskSpec {
     }
 
     @JsonProperty
-    public PayloadGenerator keyGenerator() {
-        return keyGenerator;
-    }
-
-    @JsonProperty
-    public PayloadGenerator valueGenerator() {
-        return valueGenerator;
-    }
-
-    @JsonProperty
-    public Map<String, String> producerConf() {
-        return producerConf;
+    public Map<String, String> consumerConf() {
+        return consumerConf;
     }
 
     @JsonProperty
@@ -126,23 +105,18 @@ public class ProduceBenchSpec extends TaskSpec {
         return activeTopics;
     }
 
-    @JsonProperty
-    public TopicsSpec inactiveTopics() {
-        return inactiveTopics;
-    }
-
     @Override
     public TaskController newController(String id) {
         return new TaskController() {
             @Override
             public Set<String> targetNodes(Topology topology) {
-                return Collections.singleton(producerNode);
+                return Collections.singleton(consumerNode);
             }
         };
     }
 
     @Override
     public TaskWorker newTaskWorker(String id) {
-        return new ProduceBenchWorker(id, this);
+        return new ConsumeBenchWorker(id, this);
     }
 }

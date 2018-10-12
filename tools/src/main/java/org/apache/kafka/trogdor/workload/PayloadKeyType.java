@@ -15,25 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.kafka.trogdor.rest;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.kafka.trogdor.task.TaskSpec;
+package org.apache.kafka.trogdor.workload;
 
 /**
- * A response from the Trogdor agent about stopping a worker.
+ * Describes a key in producer payload
  */
-public class StopWorkerResponse extends Message {
-    private final TaskSpec spec;
+public enum PayloadKeyType {
+    // null key
+    KEY_NULL(0),
+    // fixed size key containing a long integer representing a message index (i.e., position of
+    // the payload generator)
+    KEY_MESSAGE_INDEX(8);
 
-    @JsonCreator
-    public StopWorkerResponse(@JsonProperty("spec") TaskSpec spec) {
-        this.spec = spec;
+    private final int maxSizeInBytes;
+
+    PayloadKeyType(int maxSizeInBytes) {
+        this.maxSizeInBytes = maxSizeInBytes;
     }
 
-    @JsonProperty
-    public TaskSpec spec() {
-        return spec;
+    public int maxSizeInBytes() {
+        return maxSizeInBytes;
     }
 }

@@ -15,15 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.kafka.trogdor.task;
+package org.apache.kafka.trogdor.rest;
 
-import org.apache.kafka.trogdor.common.Topology;
+/**
+ * Indicates that a given request got an HTTP error 409: CONFLICT.
+ */
+public class RequestConflictException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
 
-import java.util.Set;
-
-public class SampleTaskController implements TaskController {
-    @Override
-    public Set<String> targetNodes(Topology topology) {
-        return Topology.Util.agentNodeNames(topology);
+    public RequestConflictException(String message) {
+        super(message);
     }
-};
+
+    public RequestConflictException() {
+        super();
+    }
+}

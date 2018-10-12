@@ -15,25 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.kafka.trogdor.rest;
+package org.apache.kafka.trogdor.workload;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.kafka.trogdor.task.TaskSpec;
+import java.util.Iterator;
 
 /**
- * A response from the Trogdor agent about creating a worker.
+ * An iterator which wraps a PayloadGenerator.
  */
-public class CreateWorkerResponse extends Message {
-    private final TaskSpec spec;
+public final class PayloadIterator implements Iterator<byte[]> {
+    private final PayloadGenerator generator;
+    private long position = 0;
 
-    @JsonCreator
-    public CreateWorkerResponse(@JsonProperty("spec") TaskSpec spec) {
-        this.spec = spec;
+    public PayloadIterator(PayloadGenerator generator) {
+        this.generator = generator;
     }
 
-    @JsonProperty
-    public TaskSpec spec() {
-        return spec;
+    @Override
+    public boolean hasNext() {
+        return true;
+    }
+
+    @Override
+    public synchronized byte[] next() {
+        return generator.generate(position++);
+    }
+
+    @Override
+    public void remove() {
+        throw new UnsupportedOperationException();
+    }
+
+    public synchronized void seek(long position) {
+        this.position = position;
+    }
+
+    public synchronized long position() {
+        return this.position;
     }
 }
