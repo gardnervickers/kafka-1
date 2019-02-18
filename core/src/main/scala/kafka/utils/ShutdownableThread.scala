@@ -74,7 +74,10 @@ abstract class ShutdownableThread(val name: String, val isInterruptible: Boolean
     }
   }
 
-
+  /**
+    * Initiates a shutdown of the thread, blocking on shutdown completion. This is equivalent to calling
+    * initiateShutdown() and awaitShutdown()
+    */
   def shutdown(): Unit = {
     initiateShutdown()
     awaitShutdown()
@@ -86,8 +89,8 @@ abstract class ShutdownableThread(val name: String, val isInterruptible: Boolean
 
   /**
    * Initiate thread shutdown. If the thread has been started, any threads waiting on
-   * ShutdownableThread.pause will be signaled. The thread will be interrupted if isInterruptible
-   * is true. If the thread has not been started, returns false. If the thread was previously running, returns true.
+   * ShutdownableThread.pause() will be signaled. The thread will be interrupted if isInterruptible
+   * is true. Returns false if the thread was not yet started, otherwise, true.
    */
   def initiateShutdown(): Boolean = {
     val (oldState, newState) = setThreadState(ThreadStates.ShuttingDown)
@@ -108,10 +111,10 @@ abstract class ShutdownableThread(val name: String, val isInterruptible: Boolean
 
   /**
    *  Causes the current thread to wait until shutdown is initiated or the specified waiting time elapses.
-   *  Blocks the caller thread even if this thread has not been started.
+   *  If the thread was not started or is already shutting down, this method returns immediately.
    */
   def pause(timeout: Long, unit: TimeUnit): Unit = withLock(threadStateLock) {
-    if (threadState < ThreadStates.ShuttingDown) {
+    if (ThreadStates.Running <= threadState && threadState < ThreadStates.ShuttingDown) {
       shuttingDownCondition.await(timeout, unit)
       trace("Shutdown initiated")
     }
@@ -126,6 +129,11 @@ abstract class ShutdownableThread(val name: String, val isInterruptible: Boolean
     threadState == ThreadStates.Running
   }
 
+  override def start(): Unit = {
+    // Ensure the calling thread sets the state to Running
+    setThreadState(ThreadStates.Running)
+    super.start()
+  }
 
   override def run(): Unit = {
     setThreadState(ThreadStates.Running)
