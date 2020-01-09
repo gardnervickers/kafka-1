@@ -1619,10 +1619,11 @@ class LogTest {
 
     log.updateHighWatermark(log.logEndOffset)
     log.maybeIncrementLogStartOffset(2L)
+    log.deleteOldSegments()
 
-    // Deleting records should not remove producer state but should delete snapshots
+    // Deleting records should not remove producer state.
     assertEquals(2, log.activeProducersWithLastSequence.size)
-    assertEquals(1, ProducerStateManager.listSnapshotFiles(log.producerStateManager.logDir).size)
+    assertEquals(2, ProducerStateManager.listSnapshotFiles(log.producerStateManager.logDir).size)
     val retainedLastSeqOpt = log.activeProducersWithLastSequence.get(pid2)
     assertTrue(retainedLastSeqOpt.isDefined)
     assertEquals(0, retainedLastSeqOpt.get)
