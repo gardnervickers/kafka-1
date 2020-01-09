@@ -763,12 +763,6 @@ class LogTest {
     assertEquals(Set(activeSegmentOffset), segmentsWithReads.map(_.baseOffset))
     assertEquals(segOffsetsAfterRecovery, recoveredSegments.map(_.baseOffset))
     assertEquals(expectedSnapshotOffsets, listProducerSnapshotOffsets.toSet)
-
-    // Verify that we keep 2 snapshot files if we checkpoint the log end offset
-    log.deleteSnapshotsAfterRecoveryPointCheckpoint()
-    val expectedSnapshotsAfterDelete = log.logSegments.map(_.baseOffset).toVector.takeRight(2) :+ log.logEndOffset
-    assertEquals(expectedSnapshotsAfterDelete, listProducerSnapshotOffsets)
-    log.close()
   }
 
   @Test
@@ -1297,15 +1291,11 @@ class LogTest {
     // roll triggers a flush at the starting offset of the new segment, we should retain all snapshots
     assertEquals(Some(1L), log.oldestProducerSnapshotOffset)
 
-    // retain the snapshots from the active segment and the previous segment, delete the oldest one
-    log.deleteSnapshotsAfterRecoveryPointCheckpoint()
-    assertEquals(Some(2L), log.oldestProducerSnapshotOffset)
-
     // even if we flush within the active segment, the snapshot should remain
     log.appendAsLeader(TestUtils.singletonRecords("baz".getBytes), leaderEpoch = 0)
     log.flush(4L)
     assertEquals(Some(3L), log.latestProducerSnapshotOffset)
-    assertEquals(Some(2L), log.oldestProducerSnapshotOffset)
+    assertEquals(Some(1L), log.oldestProducerSnapshotOffset)
   }
 
   @Test
