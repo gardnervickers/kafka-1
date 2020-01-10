@@ -678,7 +678,7 @@ class ProducerStateManager(val topicPartition: TopicPartition,
    * When we remove the head of the log due to retention, we need to remove snapshots older than
    * the new log start offset.
    */
-  def truncateHead(logStartOffset: Long): Unit = {
+  private def truncateHead(logStartOffset: Long): Unit = {
     removeUnreplicatedTransactions(logStartOffset)
 
     if (lastMapOffset < logStartOffset)
