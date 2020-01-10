@@ -57,6 +57,7 @@ class LogSegment private[log] (val log: FileRecords,
                                val lazyOffsetIndex: LazyIndex[OffsetIndex],
                                val lazyTimeIndex: LazyIndex[TimeIndex],
                                val txnIndex: TransactionIndex,
+                               val producerStateSnapshot: File,
                                val baseOffset: Long,
                                val indexIntervalBytes: Int,
                                val rollJitterMs: Long,
@@ -622,7 +623,8 @@ class LogSegment private[log] (val log: FileRecords,
       () => delete(log.deleteIfExists _, "log", log.file, logIfMissing = true),
       () => delete(offsetIndex.deleteIfExists _, "offset index", lazyOffsetIndex.file, logIfMissing = true),
       () => delete(timeIndex.deleteIfExists _, "time index", lazyTimeIndex.file, logIfMissing = true),
-      () => delete(txnIndex.deleteIfExists _, "transaction index", txnIndex.file, logIfMissing = false)
+      () => delete(txnIndex.deleteIfExists _, "transaction index", txnIndex.file, logIfMissing = false),
+      () => delete(() => {Files.deleteIfExists(producerStateSnapshot.toPath)}, "producer state snapshot", producerStateSnapshot, logIfMissing = false)
     ))
   }
 
@@ -653,11 +655,13 @@ object LogSegment {
   def open(dir: File, baseOffset: Long, config: LogConfig, time: Time, fileAlreadyExists: Boolean = false,
            initFileSize: Int = 0, preallocate: Boolean = false, fileSuffix: String = ""): LogSegment = {
     val maxIndexSize = config.maxIndexSize
+    val producerStateSnapshot = Log.producerSnapshotFile(dir, baseOffset)
     new LogSegment(
       FileRecords.open(Log.logFile(dir, baseOffset, fileSuffix), fileAlreadyExists, initFileSize, preallocate),
       LazyIndex.forOffset(Log.offsetIndexFile(dir, baseOffset, fileSuffix), baseOffset = baseOffset, maxIndexSize = maxIndexSize),
       LazyIndex.forTime(Log.timeIndexFile(dir, baseOffset, fileSuffix), baseOffset = baseOffset, maxIndexSize = maxIndexSize),
       new TransactionIndex(baseOffset, Log.transactionIndexFile(dir, baseOffset, fileSuffix)),
+      producerStateSnapshot,
       baseOffset,
       indexIntervalBytes = config.indexInterval,
       rollJitterMs = config.randomSegmentJitter,

@@ -753,6 +753,6 @@ class ProducerStateManager(val topicPartition: TopicPartition,
       None
   }
 
-  private def listSnapshotFiles: Seq[File] = ProducerStateManager.listSnapshotFiles(logDir)
+  private[log] def listSnapshotFiles: Seq[File] = ProducerStateManager.listSnapshotFiles(logDir)
 
 }

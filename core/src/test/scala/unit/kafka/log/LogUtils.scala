@@ -34,7 +34,7 @@ object LogUtils {
     val idx = LazyIndex.forOffset(Log.offsetIndexFile(logDir, offset), offset, maxIndexSize = 1000)
     val timeIdx = LazyIndex.forTime(Log.timeIndexFile(logDir, offset), offset, maxIndexSize = 1500)
     val txnIndex = new TransactionIndex(offset, Log.transactionIndexFile(logDir, offset))
-
-    new LogSegment(ms, idx, timeIdx, txnIndex, offset, indexIntervalBytes, 0, time)
+    val snapshotFile = Log.producerSnapshotFile(logDir, offset)
+    new LogSegment(ms, idx, timeIdx, txnIndex, snapshotFile, offset, indexIntervalBytes, 0, time)
   }
 }
