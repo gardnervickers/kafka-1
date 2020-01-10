@@ -1275,6 +1275,15 @@ class LogTest {
   }
 
   @Test
+  def testLoadingLogCleansOrphanedProducerStateSnapshots(): Unit = {
+    val orphanedSnapshotFile = Log.producerSnapshotFile(logDir, 42).toPath
+    Files.createFile(orphanedSnapshotFile)
+    val logConfig = LogTest.createLogConfig(segmentBytes = 2048 * 5, retentionBytes = -1, fileDeleteDelayMs = 0)
+    val log = createLog(logDir, logConfig)
+    assertEquals("expected orphaned producer state snapshot file to be cleaned up", 0, log.producerStateManager.listSnapshotFiles.size)
+  }
+
+  @Test
   def testLoadProducersAfterDeleteRecordsOnSegment(): Unit = {
     val logConfig = LogTest.createLogConfig(segmentBytes = 2048 * 5)
     val log = createLog(logDir, logConfig)
