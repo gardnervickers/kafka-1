@@ -23,7 +23,7 @@ import java.nio.file.{Files, StandardOpenOption}
 
 import kafka.log.Log.offsetFromFile
 import kafka.server.LogOffsetMetadata
-import kafka.utils.{Logging, nonthreadsafe, threadsafe}
+import kafka.utils.{CoreUtils, Logging, nonthreadsafe, threadsafe}
 import org.apache.kafka.common.{KafkaException, TopicPartition}
 import org.apache.kafka.common.errors._
 import org.apache.kafka.common.protocol.types._
@@ -755,4 +755,13 @@ class ProducerStateManager(val topicPartition: TopicPartition,
 
   private[log] def listSnapshotFiles: Seq[File] = ProducerStateManager.listSnapshotFiles(logDir)
 
+  /**
+   * Remove any producer state snapshot files which do not have a corresponding offset provided
+   * in keepOffsets.
+   */
+  def cleanupOrphanSnapshotFiles(keepOffsets: Iterable[Long]): Unit = {
+    val expected = keepOffsets.map(Log.producerSnapshotFile(logDir, _)).toSet
+    val actual = listSnapshotFiles.toSet
+    actual.diff(expected).foreach(file => Files.deleteIfExists(file.toPath))
+  }
 }
