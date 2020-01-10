@@ -1213,8 +1213,34 @@ class LogTest {
   }
 
   @Test
+  def testLogStartOffsetMovementDeletesSnapshots(): Unit = {
+    val logConfig = LogTest.createLogConfig(segmentBytes = 2048 * 5, retentionBytes = -1, fileDeleteDelayMs = 0)
+    val log = createLog(logDir, logConfig)
+    val pid1 = 1L
+    val epoch = 0.toShort
+
+    log.appendAsLeader(TestUtils.records(List(new SimpleRecord("a".getBytes)), producerId = pid1,
+      producerEpoch = epoch, sequence = 0), leaderEpoch = 0)
+    log.roll()
+    log.appendAsLeader(TestUtils.records(List(new SimpleRecord("b".getBytes)), producerId = pid1,
+      producerEpoch = epoch, sequence = 1), leaderEpoch = 0)
+    log.roll()
+    log.appendAsLeader(TestUtils.records(List(new SimpleRecord("c".getBytes)), producerId = pid1,
+      producerEpoch = epoch, sequence = 2), leaderEpoch = 0)
+    log.updateHighWatermark(log.logEndOffset)
+    assertEquals(2, log.producerStateManager.listSnapshotFiles.size)
+
+    // Increment the log start offset to exclude the first two segments.
+    log.maybeIncrementLogStartOffset(log.logEndOffset - 1)
+    log.deleteOldSegments()
+    // Sleep to breach the file delete delay and run scheduled file deletion tasks
+    mockTime.sleep(1)
+    assertEquals("expect a single producer state snapshot remaining", 1, log.producerStateManager.listSnapshotFiles.size)
+  }
+
+  @Test
   def testCompactionDeletesProducerStateSnapshots(): Unit = {
-    val logConfig = LogTest.createLogConfig(segmentBytes = 2048 * 5, cleanupPolicy = LogConfig.Compact)
+    val logConfig = LogTest.createLogConfig(segmentBytes = 2048 * 5, cleanupPolicy = LogConfig.Compact, fileDeleteDelayMs = 0)
     val log = createLog(logDir, logConfig)
     val pid1 = 1L
     val epoch = 0.toShort
@@ -1244,7 +1270,7 @@ class LogTest {
 
     log.deleteOldSegments()
     // Sleep to breach the file delete delay and run scheduled file deletion tasks
-    mockTime.sleep(5 * 60 * 1000)
+    mockTime.sleep(1)
     assertEquals("expect a single producer state snapshot remaining", 1, log.producerStateManager.listSnapshotFiles.size)
   }
 
