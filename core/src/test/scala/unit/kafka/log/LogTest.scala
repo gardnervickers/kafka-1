@@ -802,6 +802,8 @@ class LogTest {
     EasyMock.expect(stateManager.mapEndOffset).andStubReturn(0L)
     EasyMock.expect(stateManager.isEmpty).andStubReturn(true)
 
+    EasyMock.expect(stateManager.cleanupOrphanSnapshotFiles(List(0)))
+
     stateManager.takeSnapshot()
     EasyMock.expectLastCall().anyTimes()
 
@@ -878,6 +880,8 @@ class LogTest {
     stateManager.takeSnapshot()
     EasyMock.expectLastCall().anyTimes()
 
+    EasyMock.expect(stateManager.cleanupOrphanSnapshotFiles(List(0)))
+
     EasyMock.expect(stateManager.isEmpty).andReturn(true)
     EasyMock.expectLastCall().once()
 
@@ -914,6 +918,8 @@ class LogTest {
 
     stateManager.takeSnapshot()
     EasyMock.expectLastCall().anyTimes()
+
+    EasyMock.expect(stateManager.cleanupOrphanSnapshotFiles(List(0)))
 
     EasyMock.expect(stateManager.isEmpty).andReturn(true)
     EasyMock.expectLastCall().once()
@@ -959,6 +965,8 @@ class LogTest {
 
     EasyMock.expect(stateManager.isEmpty).andReturn(true)
     EasyMock.expectLastCall().once()
+
+    EasyMock.expect(stateManager.cleanupOrphanSnapshotFiles(List(0)))
 
     EasyMock.expect(stateManager.firstUnstableOffset).andReturn(None)
     EasyMock.expectLastCall().once()

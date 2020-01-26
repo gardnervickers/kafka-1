@@ -757,10 +757,10 @@ class ProducerStateManager(val topicPartition: TopicPartition,
 
   /**
    * Remove any producer state snapshot files which do not have a corresponding offset provided
-   * in keepOffsets.
+   * in keepOffsets. The latest snapshot file will always be kept.
    */
   def cleanupOrphanSnapshotFiles(keepOffsets: Iterable[Long]): Unit = {
-    val expected = keepOffsets.map(Log.producerSnapshotFile(logDir, _)).toSet
+    val expected = keepOffsets.map(Log.producerSnapshotFile(logDir, _)).toSet ++ latestSnapshotFile
     val actual = listSnapshotFiles.toSet
     actual.diff(expected).foreach(file => Files.deleteIfExists(file.toPath))
   }

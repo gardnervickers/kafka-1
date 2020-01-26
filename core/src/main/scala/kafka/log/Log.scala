@@ -310,6 +310,10 @@ class Log(@volatile var dir: File,
     // from scratch.
     if (!producerStateManager.isEmpty)
       throw new IllegalStateException("Producer state must be empty during log initialization")
+    // Pass the set of loaded segment base offsets to diff against the set of producer state snapshot
+    // files. Any orphaned files should be cleaned up.
+    val keepOffsets = logSegments.map(_.baseOffset)
+    producerStateManager.cleanupOrphanSnapshotFiles(keepOffsets)
     loadProducerState(logEndOffset, reloadFromCleanShutdown = hasCleanShutdownFile)
 
     info(s"Completed load of log with ${segments.size} segments, log start offset $logStartOffset and " +
@@ -886,10 +890,6 @@ class Log(@volatile var dir: File,
   }
 
   private def loadProducerState(lastOffset: Long, reloadFromCleanShutdown: Boolean): Unit = lock synchronized {
-    // Pass the set of loaded segment base offsets to diff against the set of producer state snapshot
-    // files. Any orphaned files should be cleaned up.
-    val keepOffsets = logSegments.map(_.baseOffset)
-    producerStateManager.cleanupOrphanSnapshotFiles(keepOffsets)
     rebuildProducerState(lastOffset, reloadFromCleanShutdown, producerStateManager)
     maybeIncrementFirstUnstableOffset()
   }
