@@ -624,7 +624,7 @@ class LogSegment private[log] (val log: FileRecords,
       () => delete(offsetIndex.deleteIfExists _, "offset index", lazyOffsetIndex.file, logIfMissing = true),
       () => delete(timeIndex.deleteIfExists _, "time index", lazyTimeIndex.file, logIfMissing = true),
       () => delete(txnIndex.deleteIfExists _, "transaction index", txnIndex.file, logIfMissing = false),
-      () => delete(() => {Files.deleteIfExists(producerStateSnapshot.toPath)}, "producer state snapshot", producerStateSnapshot, logIfMissing = false)
+      () => delete(() => { Files.deleteIfExists(producerStateSnapshot.toPath) }, "producer state snapshot", producerStateSnapshot, logIfMissing = false)
     ))
   }
 
