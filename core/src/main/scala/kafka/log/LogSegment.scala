@@ -30,7 +30,7 @@ import org.apache.kafka.common.InvalidRecordException
 import org.apache.kafka.common.errors.CorruptRecordException
 import org.apache.kafka.common.record.FileRecords.{LogOffsetPosition, TimestampAndOffset}
 import org.apache.kafka.common.record._
-import org.apache.kafka.common.utils.Time
+import org.apache.kafka.common.utils.{Time, Utils}
 
 import scala.collection.JavaConverters._
 import scala.math._
@@ -47,6 +47,7 @@ import scala.math._
  * @param lazyOffsetIndex The offset index
  * @param lazyTimeIndex The timestamp index
  * @param txnIndex The transaction index
+ * @param producerStateSnapshot The producer state snapshot file matching this segments base offset
  * @param baseOffset A lower bound on the offsets in this segment
  * @param indexIntervalBytes The approximate number of bytes between entries in the index
  * @param rollJitterMs The maximum random jitter subtracted from the scheduled segment roll time
@@ -57,7 +58,7 @@ class LogSegment private[log] (val log: FileRecords,
                                val lazyOffsetIndex: LazyIndex[OffsetIndex],
                                val lazyTimeIndex: LazyIndex[TimeIndex],
                                val txnIndex: TransactionIndex,
-                               val producerStateSnapshot: File,
+                               @volatile var producerStateSnapshot: File,
                                val baseOffset: Long,
                                val indexIntervalBytes: Int,
                                val rollJitterMs: Long,
@@ -486,6 +487,7 @@ class LogSegment private[log] (val log: FileRecords,
     lazyOffsetIndex.file = new File(dir, lazyOffsetIndex.file.getName)
     lazyTimeIndex.file = new File(dir, lazyTimeIndex.file.getName)
     txnIndex.file = new File(dir, txnIndex.file.getName)
+    producerStateSnapshot = new File(dir, producerStateSnapshot.getName)
   }
 
   /**
@@ -497,6 +499,12 @@ class LogSegment private[log] (val log: FileRecords,
     offsetIndex.renameTo(new File(CoreUtils.replaceSuffix(lazyOffsetIndex.file.getPath, oldSuffix, newSuffix)))
     timeIndex.renameTo(new File(CoreUtils.replaceSuffix(lazyTimeIndex.file.getPath, oldSuffix, newSuffix)))
     txnIndex.renameTo(new File(CoreUtils.replaceSuffix(txnIndex.file.getPath, oldSuffix, newSuffix)))
+    val newProducerStateSnapshot = new File(CoreUtils.replaceSuffix(producerStateSnapshot.getPath, oldSuffix, newSuffix))
+    try {
+      if (producerStateSnapshot.exists)
+        Utils.atomicMoveWithFallback(producerStateSnapshot.toPath, newProducerStateSnapshot.toPath)
+    } finally producerStateSnapshot = newProducerStateSnapshot
+
   }
 
   /**
@@ -624,7 +632,7 @@ class LogSegment private[log] (val log: FileRecords,
       () => delete(offsetIndex.deleteIfExists _, "offset index", lazyOffsetIndex.file, logIfMissing = true),
       () => delete(timeIndex.deleteIfExists _, "time index", lazyTimeIndex.file, logIfMissing = true),
       () => delete(txnIndex.deleteIfExists _, "transaction index", txnIndex.file, logIfMissing = false),
-      () => delete(() => { Files.deleteIfExists(producerStateSnapshot.toPath) }, "producer state snapshot", producerStateSnapshot, logIfMissing = false)
+      () => delete(() =>  Files.deleteIfExists(producerStateSnapshot.toPath), "producer state snapshot", producerStateSnapshot, logIfMissing = false)
     ))
   }
 
@@ -655,7 +663,7 @@ object LogSegment {
   def open(dir: File, baseOffset: Long, config: LogConfig, time: Time, fileAlreadyExists: Boolean = false,
            initFileSize: Int = 0, preallocate: Boolean = false, fileSuffix: String = ""): LogSegment = {
     val maxIndexSize = config.maxIndexSize
-    val producerStateSnapshot = Log.producerSnapshotFile(dir, baseOffset)
+    val producerStateSnapshot = Log.producerSnapshotFile(dir, baseOffset, fileSuffix)
     new LogSegment(
       FileRecords.open(Log.logFile(dir, baseOffset, fileSuffix), fileAlreadyExists, initFileSize, preallocate),
       LazyIndex.forOffset(Log.offsetIndexFile(dir, baseOffset, fileSuffix), baseOffset = baseOffset, maxIndexSize = maxIndexSize),
@@ -673,6 +681,7 @@ object LogSegment {
     Log.deleteFileIfExists(Log.timeIndexFile(dir, baseOffset, fileSuffix))
     Log.deleteFileIfExists(Log.transactionIndexFile(dir, baseOffset, fileSuffix))
     Log.deleteFileIfExists(Log.logFile(dir, baseOffset, fileSuffix))
+    Log.deleteFileIfExists(Log.producerSnapshotFile(dir, baseOffset, fileSuffix))
   }
 }
 

@@ -1728,9 +1728,12 @@ class LogTest {
     log.maybeIncrementLogStartOffset(2L)
     log.deleteOldSegments()
 
-    // Deleting records should not remove producer state.
+    // Deleting segments should remove producer associated with the deleted segment.
     assertEquals(2, log.activeProducersWithLastSequence.size)
-    assertEquals(2, ProducerStateManager.listSnapshotFiles(log.producerStateManager.logDir).size)
+    assertEquals(1, ProducerStateManager.listSnapshotFiles(log.producerStateManager.logDir).size)
+    val expectedDeletedSnapshotFile = Log.producerSnapshotFile(log.dir, 1, ".deleted")
+    assertTrue("expected to find deleted snapshot file for offset 1",
+      log.producerStateManager.logDir.listFiles().exists(_.getName == expectedDeletedSnapshotFile.getName))
     val retainedLastSeqOpt = log.activeProducersWithLastSequence.get(pid2)
     assertTrue(retainedLastSeqOpt.isDefined)
     assertEquals(0, retainedLastSeqOpt.get)

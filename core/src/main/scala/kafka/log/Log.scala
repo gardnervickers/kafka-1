@@ -312,7 +312,8 @@ class Log(@volatile var dir: File,
       throw new IllegalStateException("Producer state must be empty during log initialization")
     loadProducerState(logEndOffset, reloadFromCleanShutdown = hasCleanShutdownFile)
     // Pass the set of loaded segment base offsets to diff against the set of producer state snapshot
-    // files. Any orphaned files should be cleaned up.
+    // files. Any orphaned files should be cleaned up. The last producer state snapshot file is always
+    // retained.
     val segmentBaseOffsets = logSegments.map(_.baseOffset)
     producerStateManager.cleanupOrphanSnapshotFiles(segmentBaseOffsets)
 
@@ -2518,8 +2519,8 @@ object Log {
    * @param dir The directory in which the log will reside
    * @param offset The last offset (exclusive) included in the snapshot
    */
-  def producerSnapshotFile(dir: File, offset: Long): File =
-    new File(dir, filenamePrefixFromOffset(offset) + ProducerSnapshotFileSuffix)
+  def producerSnapshotFile(dir: File, offset: Long, suffix: String = ""): File =
+    new File(dir, filenamePrefixFromOffset(offset) + ProducerSnapshotFileSuffix + suffix)
 
   /**
    * Construct a transaction index file name in the given dir using the given base offset and the given suffix
