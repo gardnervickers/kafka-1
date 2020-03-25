@@ -2064,7 +2064,6 @@ class Log(@volatile var dir: File,
         updateLogEndOffset(newOffset)
         leaderEpochCache.foreach(_.clearAndFlush())
 
-        producerStateManager.truncate()
         producerStateManager.updateMapEndOffset(newOffset)
         maybeIncrementFirstUnstableOffset()
         updateLogStartOffset(newOffset)

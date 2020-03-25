@@ -555,55 +555,6 @@ class ProducerStateManagerTest {
   }
 
   @Test
-  def testDeleteSnapshotsBefore(): Unit = {
-    val epoch = 0.toShort
-    append(stateManager, producerId, epoch, 0, 0L)
-    append(stateManager, producerId, epoch, 1, 1L)
-    stateManager.takeSnapshot()
-    assertEquals(1, logDir.listFiles().length)
-    assertEquals(Set(2), currentSnapshotOffsets)
-
-    append(stateManager, producerId, epoch, 2, 2L)
-    stateManager.takeSnapshot()
-    assertEquals(2, logDir.listFiles().length)
-    assertEquals(Set(2, 3), currentSnapshotOffsets)
-
-    stateManager.deleteSnapshotsBefore(3L)
-    assertEquals(1, logDir.listFiles().length)
-    assertEquals(Set(3), currentSnapshotOffsets)
-
-    stateManager.deleteSnapshotsBefore(4L)
-    assertEquals(0, logDir.listFiles().length)
-    assertEquals(Set(), currentSnapshotOffsets)
-  }
-
-  @Test
-  def testTruncate(): Unit = {
-    val epoch = 0.toShort
-
-    append(stateManager, producerId, epoch, 0, 0L)
-    append(stateManager, producerId, epoch, 1, 1L)
-    stateManager.takeSnapshot()
-    assertEquals(1, logDir.listFiles().length)
-    assertEquals(Set(2), currentSnapshotOffsets)
-
-    append(stateManager, producerId, epoch, 2, 2L)
-    stateManager.takeSnapshot()
-    assertEquals(2, logDir.listFiles().length)
-    assertEquals(Set(2, 3), currentSnapshotOffsets)
-
-    stateManager.truncate()
-
-    assertEquals(0, logDir.listFiles().length)
-    assertEquals(Set(), currentSnapshotOffsets)
-
-    append(stateManager, producerId, epoch, 0, 0L)
-    stateManager.takeSnapshot()
-    assertEquals(1, logDir.listFiles().length)
-    assertEquals(Set(1), currentSnapshotOffsets)
-  }
-
-  @Test
   def testFirstUnstableOffsetAfterTruncation(): Unit = {
     val epoch = 0.toShort
     val sequence = 0
@@ -657,12 +608,12 @@ class ProducerStateManagerTest {
 
     stateManager.takeSnapshot()
     assertEquals(1, logDir.listFiles().length)
-    assertEquals(Set(1), currentSnapshotOffsets)
+    assertEquals(Set(1), currentSnapshotFileOffsets)
 
     // nothing changed so there should be no new snapshot
     stateManager.takeSnapshot()
     assertEquals(1, logDir.listFiles().length)
-    assertEquals(Set(1), currentSnapshotOffsets)
+    assertEquals(Set(1), currentSnapshotFileOffsets)
   }
 
   @Test
@@ -908,7 +859,7 @@ class ProducerStateManagerTest {
     stateManager.updateMapEndOffset(offset + 1)
   }
 
-  private def currentSnapshotOffsets: Set[Long] =
+  private def currentSnapshotFileOffsets: Set[Long] =
     logDir.listFiles.map(Log.offsetFromFile).toSet
 
 }

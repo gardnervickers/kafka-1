@@ -47,7 +47,7 @@ import scala.math._
  * @param lazyOffsetIndex The offset index
  * @param lazyTimeIndex The timestamp index
  * @param txnIndex The transaction index
- * @param producerStateSnapshot The producer state snapshot file matching this segments base offset
+ * @param producerStateSnapshot The producer state snapshot file matching this segment's base offset
  * @param baseOffset A lower bound on the offsets in this segment
  * @param indexIntervalBytes The approximate number of bytes between entries in the index
  * @param rollJitterMs The maximum random jitter subtracted from the scheduled segment roll time
@@ -654,6 +654,7 @@ class LogSegment private[log] (val log: FileRecords,
     Files.setLastModifiedTime(log.file.toPath, fileTime)
     Files.setLastModifiedTime(lazyOffsetIndex.file.toPath, fileTime)
     Files.setLastModifiedTime(lazyTimeIndex.file.toPath, fileTime)
+    Files.setLastModifiedTime(producerStateSnapshot.toPath, fileTime)
   }
 
 }

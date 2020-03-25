@@ -23,7 +23,7 @@ import java.nio.file.{Files, StandardOpenOption}
 
 import kafka.log.Log.offsetFromFile
 import kafka.server.LogOffsetMetadata
-import kafka.utils.{CoreUtils, Logging, nonthreadsafe, threadsafe}
+import kafka.utils.{Logging, nonthreadsafe, threadsafe}
 import org.apache.kafka.common.{KafkaException, TopicPartition}
 import org.apache.kafka.common.errors._
 import org.apache.kafka.common.protocol.types._
@@ -699,18 +699,6 @@ class ProducerStateManager(val topicPartition: TopicPartition,
   }
 
   /**
-   * Truncate the producer id mapping and remove all snapshots. This resets the state of the mapping.
-   */
-  def truncate(): Unit = {
-    producers.clear()
-    ongoingTxns.clear()
-    unreplicatedTxns.clear()
-    deleteSnapshotFiles(logDir)
-    lastSnapOffset = 0L
-    lastMapOffset = 0L
-  }
-
-  /**
    * Compute the last stable offset of a completed transaction, but do not yet mark the transaction complete.
    * That will be done in `completeTxn` below. This is used to compute the LSO that will be appended to the
    * transaction index, but the completion must be done only after successfully appending to the index.
@@ -760,7 +748,7 @@ class ProducerStateManager(val topicPartition: TopicPartition,
    * in keepOffsets. The latest snapshot file will always be kept.
    */
   def cleanupOrphanSnapshotFiles(segmentBaseOffsets: Iterable[Long]): Unit = {
-    val expected = segmentBaseOffsets.map(Log.producerSnapshotFile(logDir, _)).toSet ++ latestSnapshotFile
+    val expected = segmentBaseOffsets.map(Log.producerSnapshotFile(logDir, _)).toSet
     val actual = listSnapshotFiles.toSet
     actual.diff(expected).foreach { file =>
       info(s"Deleting orphaned producer state snapshot file '$file'")
