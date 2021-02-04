@@ -39,6 +39,8 @@ import org.apache.kafka.test.TestUtils;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,6 +52,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class NetworkClientTest {
 
@@ -65,6 +68,26 @@ public class NetworkClientTest {
     private final NetworkClient clientWithNoExponentialBackoff = createNetworkClient(reconnectBackoffMsTest);
     private final NetworkClient clientWithStaticNodes = createNetworkClientWithStaticNodes();
     private final NetworkClient clientWithNoVersionDiscovery = createNetworkClientWithNoVersionDiscovery();
+
+    private static ArrayList<InetAddress> initialAddresses;
+    private static ArrayList<InetAddress> newAddresses;
+
+    static {
+        try {
+            initialAddresses = new ArrayList<>(Arrays.asList(
+                    InetAddress.getByName("10.200.20.100"),
+                    InetAddress.getByName("10.200.20.101"),
+                    InetAddress.getByName("10.200.20.102")
+            ));
+            newAddresses = new ArrayList<>(Arrays.asList(
+                    InetAddress.getByName("10.200.20.103"),
+                    InetAddress.getByName("10.200.20.104"),
+                    InetAddress.getByName("10.200.20.105")
+            ));
+        } catch (UnknownHostException e) {
+            fail("Attempted to create an invalid InetAddress, this should not happen");
+        }
+    }
 
     private NetworkClient createNetworkClient(long reconnectBackoffMaxMs) {
         return new NetworkClient(selector, metadataUpdater, "mock", Integer.MAX_VALUE,
